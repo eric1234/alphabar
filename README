@@ -1,0 +1,35 @@
+= USAGE
+
+    # In your controller
+    @users, @paginator = User.alpha_scope :last_name, params[:ltr]
+
+    # In your view
+    <%= alphabar @paginator %>
+    <ul>
+      <% for user in @users %>
+        <li><%= user %></li>
+      <% end %>
+    </ul>
+
+See rdoc for more details.
+
+= FAIR WARNING
+
+This plugin/gem was mostly written in the early 1.0 days. Upgraded to
+1.2 as some point. Just recently updated to 2.3.8 although in the
+process the old testing code was too crufty to upgrade so I just dropped
+it completely.
+
+So it has some experience but the upgrade cycles (especially the recent
+one to 2.3.8) might have introduced some bugs. Without good testing
+we don't know.
+
+Tasks for a future project:
+
+* Implement testing again
+* Make it run on the Rails 3 code that came out just a few days ago
+
+= CREDIT
+
+This code was developed by Eric Anderson (http://pixelwareinc.com) in
+large part while working on projects under CorData (http://cordata.com).
