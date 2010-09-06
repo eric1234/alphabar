@@ -94,7 +94,7 @@ class Alphabar
   # Will return the total records found in all groups.
   # Only valid AFTER scope has been executed
   def total
-    @total ||= @counts.inject(0) {|total, group, count| total += count}
+    @total ||= @counts.inject(0) {|total, (group, count)| total += count}
   end
 
   # Will return all groups that have results.
