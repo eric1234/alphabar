@@ -6,10 +6,10 @@
 # executes the searches in the most optimal way. This object can be
 # used in the controller like the following:
 #
-#   @user_paginator = Alphabar.new
-#   @user_paginator.field = :last_name
-#   @user_paginator.group = params[:ltr]
-#   @users = @user_paginator.scope(User, :order => 'last_name')
+#   @paginator = Alphabar.new
+#   @paginator.field = :last_name
+#   @paginator.group = params[:ltr]
+#   @users = @paginator.scope(User, :order => 'last_name')
 #
 # See Alphabar::AlphaScope to reduce the amount of code in your
 # controller for the common case.
@@ -48,7 +48,7 @@ class Alphabar
       model.column_names.include? field.to_s
 
     # Find out how many are in each bucket
-    # FIXME: This may be databse specific. Work on MySQL and SQLite
+    # FIXME: This may be database specific. Work on MySQL and SQLite
     @counts = model.count :all, :group => "SUBSTR(LOWER(#{field.to_s}), 1, 1)"
     @counts = @counts.inject(HashWithIndifferentAccess.new()) do |m,grp|
       grp[0] = grp[0].blank? ? 'Blank' : grp[0]
@@ -67,22 +67,22 @@ class Alphabar
       @counts.has_key? ltr
     end if group.blank?
 
+    quoted_field = model.connection.quote_column_name field.to_s
     unless (min_records && total >= min_records) || group == 'All'
       # Determine conditions. '' or NULL shows up under "Blank"
       operator = if group == 'Blank'
-        # FIXME: Field should be sanatized. Possible SQL Inject attack
-        "= '' OR #{field.to_s} IS NULL"
+        "= '' OR #{quoted_field} IS NULL"
       else
         'LIKE ?'
       end
       conditions = [
-        "#{model.table_name}.#{field.to_s} #{operator}",
+        "#{model.table_name}.#{quoted_field} #{operator}",
         "#{group}%"
       ]
     end
 
     # Find results for this page
-    model.scoped :conditions => conditions
+    model.where conditions
   end
 
   # Given a group will return the number of results in that group.
@@ -132,7 +132,7 @@ class Alphabar
         options[options[:letter_field] || 'ltr'] = ltr
         link_to_if paginator.count(ltr) > 0, ltr, options, html_options
       end.compact.join ' '
-      content_tag 'div', letters, :class => 'alphabar'
+      content_tag 'div', letters.html_safe, :class => 'alphabar'
     end
   end
 
@@ -145,8 +145,8 @@ class Alphabar
     # populated paginator object.
     #
     # You can also pass this method a block which allows you to
-    # configure the #Alphabar paginator object before the find is
-    # executed. The argument to the block is the paginator object.
+    # configure the #Alphabar paginator object before the scope is
+    # applied. The argument to the block is the paginator object.
     #
     #   @users, @paginator = User.alpha_scope :last_name, params[:ltr]
     def alpha_scope(field, group=nil)
@@ -158,4 +158,11 @@ class Alphabar
       [results, paginator]
     end
   end
+
+  class Railtie < Rails::Railtie
+    initializer 'alphabar.integration' do
+      ActiveRecord::Base.extend Alphabar::AlphaScope
+      ActionController::Base.helper Alphabar::Helper
+    end
+  end if defined? Rails
 end

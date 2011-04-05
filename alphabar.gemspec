@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'alphabar'
-  s.version = '0.0.4'
+  s.version = '0.1.0'
   s.homepage = 'http://wiki.github.com/eric1234/alphabar/'
   s.author = 'Eric Anderson'
   s.email = 'eric@pixelwareinc.com'
