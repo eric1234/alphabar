@@ -57,9 +57,15 @@ class Alphabar
     # Find out how many are in each bucket
     # FIXME: This may be databse specific. Work on MySQL and SQLite
     @counts = model.count :all, :group => "SUBSTR(LOWER(#{search_by}), 1, 1)"
-    @counts = @counts.inject(HashWithIndifferentAccess.new()) do |m,grp|
-      grp[0] = grp[0].blank? ? 'Blank' : grp[0]
-      m[grp[0].upcase] = grp[1]
+    @counts = @counts.inject(HashWithIndifferentAccess.new()) do |m, (ltr, count)|
+      ltr = if ltr.blank?
+        'Blank'
+      elsif ltr =~ /^\d$/
+        '#'
+      else
+        ltr
+      end
+      m[ltr.upcase] = count
       m
     end
     @counts['All'] = total if all_option
@@ -68,21 +74,19 @@ class Alphabar
     self.group = nil unless @counts.has_key? group
 
     # Find the first group that has records
-    all_groups = ('A'..'Z').to_a + ['Blank']
+    all_groups = ('A'..'Z').to_a + ['Blank', '#']
     all_groups << 'All' if all_option
     self.group = all_groups.detect(proc {'A'}) do |ltr|
       @counts.has_key? ltr
     end if group.blank?
 
-    unless (min_records && total >= min_records) || group == 'All'
-      # Determine conditions. '' or NULL shows up under "Blank"
-      operator = if group == 'Blank'
-        "= '' OR #{search_by} IS NULL"
-      else
-        'LIKE ?'
-      end
-      conditions = ["#{search_by} #{operator}", "#{group}%"]
-    end
+    conditions = if group == 'Blank'
+      "#{search_by} = '' OR #{search_by} IS NULL"
+    elsif group == '#'
+      (0..9).collect {|i| "#{search_by} LIKE '#{i}%'"}.join ' OR '
+    else
+      ["#{search_by} LIKE ?", "#{group}%"]
+    end unless (min_records && total >= min_records) || group == 'All'
 
     # Find results for this page
     model.scoped :conditions => conditions
@@ -128,6 +132,7 @@ class Alphabar
       slots = ('A'..'Z').to_a
       slots << 'Blank' if paginator.count('Blank') > 0
       slots << 'All' if paginator.count('All') > 0
+      slots.unshift '#' if paginator.count('#') > 0
       letters = slots.collect do |ltr|
         html_options = {}
         html_options[:class] = 'current' if ltr == paginator.group.to_s
