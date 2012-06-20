@@ -44,12 +44,19 @@ class Alphabar
   # Will execute the actual scoping on the given model. To further
   # limit the records pass in a scope instead of the actual model.
   def scope(model)
-    raise ActiveRecord::ActiveRecordError, 'invalid column' unless
-      model.column_names.include? field.to_s
+
+    # If field is just a basic name (i.e. "foobar") then automatically
+    # prefix table name. Otherwise use as is so application can do
+    # whatever fancy tricks it wants (i.e COALESCE, etc.)
+    search_by = if field.to_s =~ /^\w+$/
+      "#{model.table_name}.#{field.to_s}"
+    else
+      field.to_s
+    end
 
     # Find out how many are in each bucket
     # FIXME: This may be databse specific. Work on MySQL and SQLite
-    @counts = model.count :all, :group => "SUBSTR(LOWER(#{field.to_s}), 1, 1)"
+    @counts = model.count :all, :group => "SUBSTR(LOWER(#{search_by}), 1, 1)"
     @counts = @counts.inject(HashWithIndifferentAccess.new()) do |m,grp|
       grp[0] = grp[0].blank? ? 'Blank' : grp[0]
       m[grp[0].upcase] = grp[1]
@@ -70,15 +77,11 @@ class Alphabar
     unless (min_records && total >= min_records) || group == 'All'
       # Determine conditions. '' or NULL shows up under "Blank"
       operator = if group == 'Blank'
-        # FIXME: Field should be sanatized. Possible SQL Inject attack
-        "= '' OR #{field.to_s} IS NULL"
+        "= '' OR #{search_by} IS NULL"
       else
         'LIKE ?'
       end
-      conditions = [
-        "#{model.table_name}.#{field.to_s} #{operator}",
-        "#{group}%"
-      ]
+      conditions = ["#{search_by} #{operator}", "#{group}%"]
     end
 
     # Find results for this page
