@@ -1,5 +1,5 @@
 require 'rake'
-require 'rake/gempackagetask'
+require 'rubygems/packagetask'
 
 spec = eval File.read('alphabar.gemspec')
 Rake::GemPackageTask.new spec do |pkg|

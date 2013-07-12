@@ -74,7 +74,7 @@ class Alphabar
     self.group = nil unless @counts.has_key? group
 
     # Find the first group that has records
-    all_groups = ('A'..'Z').to_a + ['Blank', '#']
+    all_groups = ['#'] + ('A'..'Z').to_a + ['Blank']
     all_groups << 'All' if all_option
     self.group = all_groups.detect(proc {'A'}) do |ltr|
       @counts.has_key? ltr
@@ -89,7 +89,13 @@ class Alphabar
     end unless (min_records && total >= min_records) || group == 'All'
 
     # Find results for this page
-    model.where conditions
+    if model.respond_to? :where
+      # ActiveRecord >= 3
+      model.where conditions
+    else
+      # ActiveRecord < 3
+      model.scoped :conditions => conditions
+    end
   end
 
   # Given a group will return the number of results in that group.
@@ -172,5 +178,5 @@ class Alphabar
       ActiveRecord::Base.extend Alphabar::AlphaScope
       ActionController::Base.helper Alphabar::Helper
     end
-  end if defined? Rails
+  end if defined? Rails::Railtie
 end
