@@ -1,11 +1,12 @@
 Gem::Specification.new do |s|
   s.name = 'alphabar'
-  s.version = '0.1.2'
+  s.version = '0.1.3'
   s.homepage = 'http://wiki.github.com/eric1234/alphabar/'
   s.author = 'Eric Anderson'
   s.email = 'eric@pixelwareinc.com'
   s.add_dependency 'rails'
   s.files = Dir['**/*.rb']
+  s.license = 'MIT'
   s.has_rdoc = true
   s.extra_rdoc_files << 'README.rdoc'
   s.rdoc_options << '--main' << 'README.rdoc'
