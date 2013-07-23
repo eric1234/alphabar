@@ -134,8 +134,13 @@ class Alphabar
     # requirement this helper will return an empty string.
     def alphabar(paginator, options={})
       return '' if paginator.min_records && paginator.total < paginator.min_records
-      return '' if paginator.populated_groups.size <= 1
-      slots = ('A'..'Z').to_a
+
+      populated_groups = paginator.populated_groups.size
+      populated_groups -= 1 if paginator.count('All') > 0
+
+      return '' if populated_groups <= 1
+
+      slots = ('A'..'Z').to_a if paginator.count('All') > 0
       slots << 'Blank' if paginator.count('Blank') > 0
       slots << 'All' if paginator.count('All') > 0
       slots.unshift '#' if paginator.count('#') > 0
